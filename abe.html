@@ -1,17 +1,198 @@
 <!DOCTYPE html>
 <html lang="jp">
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>バカチン★ゲームセンター</title>
-    <link rel="stylesheet" type="text/css" href="css/reset.css" />
-    <link rel="stylesheet" type="text/css" href="css/sanitize.css" />
-    <link rel="stylesheet" type="text/css" href="css/abe.css" />
-</head>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>バカチン★シューティング</title>
+        <link rel="stylesheet" type="text/css" href="css/reset.css" />
+        <link rel="stylesheet" type="text/css" href="css/sanitize.css" />
+        <link rel="stylesheet" type="text/css" href="css/abe.css" />
+        <!-- Googleフォント読込 -->
+        <link href="https://fonts.googleapis.com/earlyaccess/nicomoji.css" rel="stylesheet">
+    </head>
 
-<body>
-<div>テスト</div>
-</body>
+    <body>
+        <!-- スプラッシュスクリーンのセクション -->
+        <div id="splashScreen" class="centered full-screen">
+            <img src="./material/image/バカチンガー広報イラスト (2).png" alt="">
+            <h1>バカチン<span>★</span>シューティング</h1>
+            <p>～ G's 3大重罪<span> "サイレント詰み" </span>を撲滅せよ！～</p>
+            <button onclick="buttonClickSound(); startGame()">START</button>
+        </div>
+        <!-- ゲームのメインコンテナ -->
+        <div id="gameContainer" class="scrollingBackground">
+            <div id="player" style="left: 50%;"></div>
+            <div id="score">スコア: 0</div>
+            <div id="timer">制限時間: 30</div>
+        </div>
 
-</html>
+        <!-- ゲーム操作の説明 -->
+        <div id="gameInstructions" class="centered">
+            <p>操作方法：左右の矢印キーで移動、スペースキーで攻撃</p>
+        </div>
+
+        <!-- 結果表示用のモーダルウィンドウ -->
+        <div id="modal" class="modal">
+            <div class="modal-content centered">
+                <h1>結果発表</h1>
+                <p id="finalScore"></p>
+                <img src="./material/image/バカチンガー広報イラスト (2).png" alt="Game Over">
+                <p>お疲れチンガ～</p>
+                <button onclick="buttonClickSound(); document.location.href = 'index.html';">HOME</button>
+            </div>
+        </div>
+
+        <!-- BGM -->
+        <audio id="backgroundMusic" src="./material/sound/bakachinga-song.m4a" loop></audio>
+
+        <script>
+            let score = 0; // スコアを保持する変数
+            let player = document.getElementById('player'); // プレイヤー要素
+            const gameContainer = document.getElementById('gameContainer'); // ゲームコンテナ
+            let enemies = []; // 敵オブジェクトを格納する配列
+            let bullets = []; // 弾オブジェクトを格納する配列
+            const backgroundMusic = document.getElementById('backgroundMusic'); // BGM要素
+
+            // ドキュメントの読み込みが完了した際のイベント
+            document.getElementById('splashScreen').addEventListener('click', function () {
+                this.style.display = 'none'; // スプラッシュスクリーンを非表示にする
+                backgroundMusic.play(); // BGMを再生
+                startGame(); // ゲーム開始
+            });
+
+            // ゲームを開始する関数
+            function startGame() {
+                document.addEventListener('keydown', handlePlayerMovement);
+                const timerId = setInterval(() => {
+                    let timeLeft = parseInt(document.getElementById('timer').textContent.split(": ")[1]);
+                    timeLeft--;
+                    document.getElementById('timer').textContent = '制限時間: ' + timeLeft;
+                    if (timeLeft <= 0) {
+                        clearInterval(timerId);
+                        endGame(); // タイマーが0になったらゲーム終了
+                    }
+                }, 1000);
+                spawnEnemies(); // 敵を生成する
+            }
+
+            // ゲーム終了時の関数
+            function endGame() {
+                document.removeEventListener('keydown', handlePlayerMovement);
+                enemies.forEach(enemy => enemy.remove()); // すべての敵を削除
+                bullets.forEach(bullet => bullet.remove()); // すべての弾を削除
+                document.getElementById('modal').style.display = 'block'; // 結果モーダルを表示
+                document.getElementById('finalScore').textContent = '≪最終スコア ' + score + '点≫'; // 最終スコアを表示
+                backgroundMusic.pause(); // BGMを停止
+            }
+
+            // 効果音を再生する関数
+            function playSound(effect) {
+                const audio = new Audio(effect);
+                audio.play();
+            }
+
+            // ボタンのクリック音を再生
+            function buttonClickSound() {
+                playSound('material/sound/bttn-click.mp3');
+            }
+
+            // 弾を撃つ音を再生
+            function shootSound() {
+                playSound('material/sound/bakachin.m4a');
+            }
+
+            // 弾が敵に当たった時の音を再生
+            function hitSound() {
+                playSound('material/sound/se_damage8.mp3');
+            }
+
+            // プレイヤーの移動を処理する関数
+            function handlePlayerMovement(e) {
+                const step = 30; // 移動のステップ幅を設定
+                let left = parseInt(player.style.left);
+                if (e.key === "ArrowLeft" && left > 0) {
+                    player.style.left = `${left - step}px`;
+                } else if (e.key === "ArrowRight" && left < (gameContainer.offsetWidth - player.offsetWidth)) {
+                    player.style.left = `${left + step}px`;
+                } else if (e.key === " ") {
+                    e.preventDefault(); // スペースバーでのスクロールを防ぐ
+                    createBullet(); // 弾を生成
+                }
+            }
+
+            // 弾を生成し、ゲームコンテナに追加する関数
+            function createBullet() {
+                const bullet = document.createElement('div');
+                bullet.className = 'bullet';
+                bullet.style.left = `${parseInt(player.style.left) + player.offsetWidth / 2 - 2.5}px`;
+                bullet.style.top = `${gameContainer.offsetHeight - player.offsetHeight - 20}px`;
+                gameContainer.appendChild(bullet);
+                bullets.push(bullet);
+                moveBullet(bullet);
+                shootSound();
+            }
+
+            // 弾の動きを制御する関数
+            function moveBullet(bullet) {
+                let moveInterval = setInterval(() => {
+                    let top = parseInt(bullet.style.top);
+                    if (top <= 0) {
+                        clearInterval(moveInterval);
+                        bullet.remove();
+                        bullets.splice(bullets.indexOf(bullet), 1);
+                    } else {
+                        bullet.style.top = `${top - 10}px`;
+                        checkCollisions(bullet);
+                    }
+                }, 50);
+            }
+
+            // 敵を生成し、定期的に追加する関数
+            function spawnEnemies() {
+                setInterval(() => {
+                    const enemy = document.createElement('div');
+                    enemy.className = 'enemy';
+                    enemy.style.left = `${Math.floor(Math.random() * (gameContainer.offsetWidth - 30))}px`;
+                    enemy.style.top = '0px';
+                    gameContainer.appendChild(enemy);
+                    enemies.push(enemy);
+                    moveEnemy(enemy);
+                }, 1000); // 敵の生成間隔
+            }
+
+            // 敵の動きを制御する関数
+            function moveEnemy(enemy) {
+                let moveInterval = setInterval(() => {
+                    let top = parseInt(enemy.style.top);
+                    if (top >= gameContainer.offsetHeight) {
+                        clearInterval(moveInterval);
+                        enemy.remove();
+                        enemies.splice(enemies.indexOf(enemy), 1);
+                    } else {
+                        enemy.style.top = `${top + 5}px`;
+                    }
+                }, 100);
+            }
+
+            // 弾と敵の衝突判定を行う関数
+            function checkCollisions(bullet) {
+                enemies.forEach(enemy => {
+                    if (bullet && enemy) {
+                        const bulletRect = bullet.getBoundingClientRect();
+                        const enemyRect = enemy.getBoundingClientRect();
+                        if (!(bulletRect.right < enemyRect.left || bulletRect.left > enemyRect.right || bulletRect.bottom < enemyRect.top || bulletRect.top > enemyRect.bottom)) {
+                            score += 10;
+                            document.getElementById('score').textContent = `スコア: ${score}`;
+                            hitSound();
+                            enemy.remove();
+                            enemies.splice(enemies.indexOf(enemy), 1);
+                            bullet.remove();
+                        }
+                    }
+                });
+            }
+        </script>
+    </body>
+
+    </html>
