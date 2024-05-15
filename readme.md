@@ -10,7 +10,7 @@
 
 ## ③DEMO
 
-デプロイしている場合はURLを記入（任意）← 課題完成後に安倍がデプロイ＆記入予定
+https://hideaki-abe.github.io/bakachin_gameCenter/
 
 ## ④作ったアプリケーション用のIDまたはPasswordがある場合
 
