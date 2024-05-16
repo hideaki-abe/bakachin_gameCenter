@@ -29,7 +29,6 @@
         <img src="./material/image/バカチンガー広報イラスト (2).png" alt="">
         <h1>バカチン<span>★</span>エアホッケー</h1>
         <button onclick="buttonClickSound(); startGame()">START</button>
-                </div>
     </div>
 
     <!-- ゲームのメインコンテナ -->
@@ -37,10 +36,10 @@
         <div id="gameCanvas" style="width: 800px; height: 400px; border: 1px solid black;"></div>
     </div>
 
-            <!-- ゲーム操作の説明 -->
-            <div id="gameInstructions" class="centered">
-                <p>操作方法：タッチパネルで移動</p>
-            </div>
+    <!-- ゲーム操作の説明 -->
+    <div id="gameInstructions" class="centered">
+        <p>操作方法：タッチパネルで移動</p>
+    </div>
 
     <!-- 結果表示用のモーダルウィンドウ -->
     <div id="modal" class="modal">
@@ -72,8 +71,9 @@
         var computerScore = 0;
 
         var ballImage = new Image();
-            ballImage.src = 'material/image/バカチンガー広報イラスト (2).png'; // ボールの画像のパスを指定してください
+        ballImage.src = 'material/image/バカチンガー広報イラスト (2).png'; // ボールの画像のパスを指定してください
 
+        var backgroundMusic = new Audio('material/sound/bakachinga-song.m4a'); // 音楽ファイルのパスを指定してください
 
         document.getElementById("gameCanvas").appendChild(canvas);
 
@@ -81,7 +81,6 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             ctx.drawImage(ballImage, ballX - ballSize / 2, ballY - ballSize / 2, ballSize, ballSize);
-
 
             ctx.fillRect(0, playerY - paddleHeight / 2, paddleWidth, paddleHeight);
             ctx.fillRect(canvas.width - paddleWidth, computerY - paddleHeight / 2, paddleWidth, paddleHeight);
@@ -147,6 +146,9 @@
             document.getElementById("splashScreen").style.display = "none";
             // ゲームのメインループを開始する
             draw();
+            // 背景音楽を再生する
+            backgroundMusic.loop = true; // ループ再生
+            backgroundMusic.play();
         }
 
         canvas.addEventListener("mousemove", function (event) {
@@ -156,18 +158,23 @@
         function showResult(message) {
             document.getElementById("finalScore").innerText = message;
             document.getElementById("modal").style.display = "block";
+            // 背景音楽を停止する
+            backgroundMusic.pause();
+            backgroundMusic.currentTime = 0;
         }
-            // 効果音を再生する関数
-            function playSound(effect) {
-                const audio = new Audio(effect);
-                audio.play();
-            }
 
-            // ボタンのクリック音を再生
-            function buttonClickSound() {
-                playSound('material/sound/bttn-click.mp3');
-            }
-        </script>
+        // 効果音を再生する関数
+        function playSound(effect) {
+            const audio = new Audio(effect);
+            audio.play();
+        }
+
+        // ボタンのクリック音を再生
+        function buttonClickSound() {
+            playSound('material/sound/bttn-click.mp3');
+        }
+    </script>
 </body>
-</html>
 
+</html>
+　
